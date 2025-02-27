@@ -16,7 +16,8 @@ import {
   Calendar
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import NewProject from './Newproject';
+import { Modal, Button, Form } from 'react-bootstrap';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 // Dashboard components
 const Overview = () => (
@@ -209,12 +210,16 @@ export default function BuilderDashboard() {
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
   };
-  
+
+  const handleCloseModal = () => setShowNewProjectModal(false);
+  const handleShowModal = () => setShowNewProjectModal(true);
+
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
@@ -326,7 +331,7 @@ export default function BuilderDashboard() {
           <div className="px-4 py-3 border-t border-gray-200 flex justify-center">
             <button 
               className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md flex items-center"
-              onClick={() => navigate('/Newproject')}
+              onClick={handleShowModal}
             >
               <Plus className="w-5 h-5 mr-2" />
               New Project
@@ -343,6 +348,108 @@ export default function BuilderDashboard() {
             <Route path="/help" element={<Help />} />
           </Routes>
         </main>
+
+        {/* New Project Modal */}
+        <Modal show={showNewProjectModal} onHide={handleCloseModal} size="lg" scrollable>
+          <Modal.Header closeButton>
+            <Modal.Title>Create a New Project</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <Form>
+              <Form.Group className="mb-3">
+                <Form.Label>Project Name:</Form.Label>
+                <Form.Control type="text" placeholder="Enter project name" />
+              </Form.Group>
+
+              <Form.Group className="mb-3">
+                <Form.Label>Start Date:</Form.Label>
+                <Form.Control type="date" />
+              </Form.Group>
+
+              <Form.Group className="mb-3">
+                <Form.Label>End Date:</Form.Label>
+                <Form.Control type="date" />
+              </Form.Group>
+
+              <Form.Group className="mb-3">
+                <Form.Label>Estimated Cost (INR):</Form.Label>
+                <Form.Control type="number" placeholder="Enter numeric values only" />
+              </Form.Group>
+
+              <h4>Phases</h4>
+              <Form.Group className="mb-3">
+                <Form.Check 
+                  type="checkbox"
+                  label="Land & Pre-Construction Phase"
+                  defaultChecked
+                />
+                <Form.Control type="number" placeholder="%" className="mt-2" style={{ width: '100px' }} />
+              </Form.Group>
+
+              <Form.Group className="mb-3">
+                <Form.Check 
+                  type="checkbox"
+                  label="Foundation & Structural Construction"
+                  defaultChecked
+                />
+                <Form.Control type="number" placeholder="%" className="mt-2" style={{ width: '100px' }} />
+              </Form.Group>
+
+              <Form.Group className="mb-3">
+                <Form.Check 
+                  type="checkbox"
+                  label="Superstructure Construction"
+                  defaultChecked
+                />
+                <Form.Control type="number" placeholder="%" className="mt-2" style={{ width: '100px' }} />
+              </Form.Group>
+
+              <Form.Group className="mb-3">
+                <Form.Check 
+                  type="checkbox"
+                  label="Internal & External Works"
+                  defaultChecked
+                />
+                <Form.Control type="number" placeholder="%" className="mt-2" style={{ width: '100px' }} />
+              </Form.Group>
+
+              <Form.Group className="mb-3">
+                <Form.Check 
+                  type="checkbox"
+                  label="Final Installations & Interior Work"
+                  defaultChecked
+                />
+                <Form.Control type="number" placeholder="%" className="mt-2" style={{ width: '100px' }} />
+              </Form.Group>
+
+              <Form.Group className="mb-3">
+                <Form.Check 
+                  type="checkbox"
+                  label="Testing & Quality Checks"
+                  defaultChecked
+                />
+                <Form.Control type="number" placeholder="%" className="mt-2" style={{ width: '100px' }} />
+              </Form.Group>
+
+              <Form.Group className="mb-3">
+                <Form.Check 
+                  type="checkbox"
+                  label="Handover & Completion"
+                  defaultChecked
+                />
+                <Form.Control type="number" placeholder="%" className="mt-2" style={{ width: '100px' }} />
+              </Form.Group>
+            </Form>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="danger" onClick={handleCloseModal}>
+              Cancel
+            </Button>
+            <Button variant="success" onClick={handleCloseModal}>
+              Save Project
+            </Button>
+          </Modal.Footer>
+        </Modal>
       </div>
     </div>
   );
