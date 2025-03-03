@@ -11,9 +11,18 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 const Projects = () => {
   const { user } = useAuth();
-  const [projects, setProjects] = useState([]);
+  interface Project {
+    id: string;
+    project_name: string;
+    start_date: string | null;
+    end_date: string | null;
+    estimated_cost: number | null;
+    status: string;
+  }
+
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -31,8 +40,12 @@ const Projects = () => {
 
         setProjects(data || []);
       } catch (error) {
-        console.error('Error fetching projects:', error.message);
-        setError(`Failed to fetch projects: ${error.message}`);
+        console.error('Error fetching projects: , ${error.message}');
+        if (error instanceof Error) {
+          setError(`Failed to fetch projects: ${error.message}`);
+        } else {
+          setError('Failed to fetch projects: Unknown error');
+        }
       } finally {
         setLoading(false);
       }

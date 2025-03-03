@@ -6,7 +6,6 @@ import BuilderSignup from './pages/BuilderSignup';
 import CustomerSignup from './pages/CustomerSignup';
 import BuilderDashboard from './pages/BuilderDashboard';
 import { useAuth } from './contexts/AuthContext';
-import NewProject from './pages/Newproject';
 
 function App() {
   return (
