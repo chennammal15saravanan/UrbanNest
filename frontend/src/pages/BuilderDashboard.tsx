@@ -293,8 +293,12 @@ export default function BuilderDashboard() {
       handleCloseModal();
       navigate('/builder/dashboard/projects');
     } catch (error) {
-      console.error('Error saving project:', error.message, error.details || error);
-      setError(`Failed to save project: ${error.message}`);
+      if (error instanceof Error) {
+        console.error('Error saving project:', error.message, error);
+      } else {
+        console.error('Error saving project:', error);
+      }
+      setError(`Failed to save project: ${(error as any).message}`);
     }
   };
 
