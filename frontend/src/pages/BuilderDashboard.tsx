@@ -1,23 +1,19 @@
 import React, { useState } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import { 
-  Building2, 
-  Search, 
-  Bell, 
-  User, 
-  LogOut, 
-  Settings as SettingsIcon, 
-  HelpCircle, 
-  Plus,
-  Home,
-  BarChart3,
-  FileText,
-  Users,
-  Calendar
+  Building2, Search, Bell, User, LogOut, Settings as SettingsIcon, 
+  HelpCircle, Plus, Home, BarChart3, FileText, Users, Calendar 
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Modal, Button, Form } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import { createClient } from '@supabase/supabase-js';
+import Projects from './ProjectsPage'; // Import the Projects component from its file
+
+// Initialize Supabase client (replace with your Supabase credentials)
+const supabaseUrl = 'https://ddxaptcwkmwcbwovdrlr.supabase.co'; // Replace with your actual Project URL
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkeGFwdGN3a213Y2J3b3ZkcmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA5Nzc1NzgsImV4cCI6MjA1NjU1MzU3OH0.BWCikX8MvBWSrXkSIwgVA28RXDq1WSuYs4Me_JNFR5k';
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Dashboard components
 const Overview = () => (
@@ -48,65 +44,6 @@ const Overview = () => (
           </div>
         ))}
       </div>
-    </div>
-  </div>
-);
-
-const Projects = () => (
-  <div className="p-6">
-    <div className="flex justify-between items-center mb-6">
-      <h2 className="text-2xl font-bold">My Projects</h2>
-      <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center">
-        <Plus className="w-5 h-5 mr-2" />
-        New Project
-      </button>
-    </div>
-    
-    <div className="bg-white rounded-lg shadow overflow-hidden">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project Name</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completion</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {[
-            { name: 'Riverside Apartments', location: 'New York', status: 'In Progress', completion: '65%' },
-            { name: 'Sunset Villas', location: 'Los Angeles', status: 'Planning', completion: '10%' },
-            { name: 'Mountain View Condos', location: 'Denver', status: 'Completed', completion: '100%' },
-            { name: 'Harbor Heights', location: 'Seattle', status: 'In Progress', completion: '45%' },
-            { name: 'Central Park Residences', location: 'Chicago', status: 'Planning', completion: '5%' },
-          ].map((project, idx) => (
-            <tr key={idx}>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm font-medium text-gray-900">{project.name}</div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-500">{project.location}</div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                  ${project.status === 'Completed' ? 'bg-green-100 text-green-800' : 
-                    project.status === 'In Progress' ? 'bg-blue-100 text-blue-800' : 
-                    'bg-yellow-100 text-yellow-800'}`}>
-                  {project.status}
-                </span>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {project.completion}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <a href="#" className="text-blue-600 hover:text-blue-900 mr-3">View</a>
-                <a href="#" className="text-blue-600 hover:text-blue-900">Edit</a>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
     </div>
   </div>
 );
@@ -206,19 +143,160 @@ const Help = () => (
   </div>
 );
 
+interface FormData {
+  projectName: string;
+  startDate: string;
+  endDate: string;
+  estimatedCost: string;
+  phases: Record<string, { enabled: boolean; percentage: string }>;
+}
+
 export default function BuilderDashboard() {
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth(); // Ensure useAuth returns the correct type
   const navigate = useNavigate();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
-  
+  const [error, setError] = useState<string | null>(null); // State for error messages
+
+  // State to hold form data with TypeScript type
+  const [formData, setFormData] = useState<FormData>({
+    projectName: '',
+    startDate: '',
+    endDate: '',
+    estimatedCost: '',
+    phases: {
+      landPreConstruction: { enabled: true, percentage: '' },
+      foundationStructural: { enabled: true, percentage: '' },
+      superstructure: { enabled: true, percentage: '' },
+      internalExternal: { enabled: true, percentage: '' },
+      finalInstallations: { enabled: true, percentage: '' },
+      testingQuality: { enabled: true, percentage: '' },
+      handoverCompletion: { enabled: true, percentage: '' },
+    },
+  });
+
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
   };
 
-  const handleCloseModal = () => setShowNewProjectModal(false);
+  const handleCloseModal = () => {
+    setShowNewProjectModal(false);
+    setError(null); // Clear error when closing
+    // Reset form data when modal closes
+    setFormData({
+      projectName: '',
+      startDate: '',
+      endDate: '',
+      estimatedCost: '',
+      phases: {
+        landPreConstruction: { enabled: true, percentage: '' },
+        foundationStructural: { enabled: true, percentage: '' },
+        superstructure: { enabled: true, percentage: '' },
+        internalExternal: { enabled: true, percentage: '' },
+        finalInstallations: { enabled: true, percentage: '' },
+        testingQuality: { enabled: true, percentage: '' },
+        handoverCompletion: { enabled: true, percentage: '' },
+      },
+    });
+  };
+
   const handleShowModal = () => setShowNewProjectModal(true);
+
+  // Handle input changes
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  // Handle phase checkbox changes
+  const handlePhaseCheckboxChange = (phase: string, checked: boolean) => {
+    setFormData((prev) => ({
+      ...prev,
+      phases: {
+        ...prev.phases,
+        [phase]: {
+          ...prev.phases[phase], // Ensure prev.phases[phase] exists
+          enabled: checked,
+        },
+      },
+    }));
+  };
+
+  // Handle phase percentage changes
+  const handlePhasePercentageChange = (phase: string, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      phases: {
+        ...prev.phases,
+        [phase]: {
+          ...prev.phases[phase], // Ensure prev.phases[phase] exists
+          percentage: value,
+        },
+      },
+    }));
+  };
+
+  // Handle form submission and save to Supabase
+  const handleSaveProject = async () => {
+    try {
+      if (!user || !user.id) throw new Error('User not authenticated or ID missing');
+  
+      // Validate required fields
+      if (!formData.projectName.trim()) {
+        throw new Error('Project name is required');
+      }
+  
+      console.log('Current user:', user);
+      console.log('User ID:', user.id);
+      console.log('Supabase client initialized:', supabase);
+      console.log('Sending data to Supabase:', {
+        user_id: user.id,
+        project_name: formData.projectName,
+        start_date: formData.startDate || null,
+        end_date: formData.endDate || null,
+        estimated_cost: formData.estimatedCost ? parseFloat(formData.estimatedCost) : null,
+        phases: formData.phases,
+      });
+  
+      // Test Supabase connection
+      const { data: testData, error: testError } = await supabase
+        .from('project_users')
+        .select('id')
+        .limit(1);
+      if (testError) {
+        console.error('Test query failed:', testError);
+        throw new Error(`Supabase connection test failed: ${testError.message}`);
+      }
+      console.log('Test data:', testData);
+  
+      // Perform the insert
+      const { data, error } = await supabase
+        .from('project_users')
+        .insert([
+          {
+            user_id: user.id,
+            project_name: formData.projectName,
+            start_date: formData.startDate || null,
+            end_date: formData.endDate || null,
+            estimated_cost: formData.estimatedCost ? parseFloat(formData.estimatedCost) : null,
+            phases: formData.phases,
+          },
+        ]);
+  
+      if (error) throw error;
+  
+      console.log('Project saved:', data);
+      handleCloseModal();
+      navigate('/builder/dashboard/projects');
+    } catch (error) {
+      console.error('Error saving project:', error.message, error.details || error);
+      setError(`Failed to save project: ${error.message}`);
+    }
+  };
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -355,97 +433,82 @@ export default function BuilderDashboard() {
             <Modal.Title>Create a New Project</Modal.Title>
           </Modal.Header>
           <Modal.Body>
+            {error && (
+              <div className="mb-4 p-3 bg-red-100 text-red-800 rounded">
+                {error}
+              </div>
+            )}
             <Form>
               <Form.Group className="mb-3">
                 <Form.Label>Project Name:</Form.Label>
-                <Form.Control type="text" placeholder="Enter project name" />
+                <Form.Control
+                  type="text"
+                  name="projectName"
+                  value={formData.projectName}
+                  onChange={handleInputChange}
+                  placeholder="Enter project name"
+                  required
+                />
               </Form.Group>
 
               <Form.Group className="mb-3">
                 <Form.Label>Start Date:</Form.Label>
-                <Form.Control type="date" />
+                <Form.Control
+                  type="date"
+                  name="startDate"
+                  value={formData.startDate}
+                  onChange={handleInputChange}
+                />
               </Form.Group>
 
               <Form.Group className="mb-3">
                 <Form.Label>End Date:</Form.Label>
-                <Form.Control type="date" />
+                <Form.Control
+                  type="date"
+                  name="endDate"
+                  value={formData.endDate}
+                  onChange={handleInputChange}
+                />
               </Form.Group>
 
               <Form.Group className="mb-3">
                 <Form.Label>Estimated Cost (INR):</Form.Label>
-                <Form.Control type="number" placeholder="Enter numeric values only" />
+                <Form.Control
+                  type="number"
+                  name="estimatedCost"
+                  value={formData.estimatedCost}
+                  onChange={handleInputChange}
+                  placeholder="Enter numeric values only"
+                />
               </Form.Group>
 
               <h4>Phases</h4>
-              <Form.Group className="mb-3">
-                <Form.Check 
-                  type="checkbox"
-                  label="Land & Pre-Construction Phase"
-                  defaultChecked
-                />
-                <Form.Control type="number" placeholder="%" className="mt-2" style={{ width: '100px' }} />
-              </Form.Group>
-
-              <Form.Group className="mb-3">
-                <Form.Check 
-                  type="checkbox"
-                  label="Foundation & Structural Construction"
-                  defaultChecked
-                />
-                <Form.Control type="number" placeholder="%" className="mt-2" style={{ width: '100px' }} />
-              </Form.Group>
-
-              <Form.Group className="mb-3">
-                <Form.Check 
-                  type="checkbox"
-                  label="Superstructure Construction"
-                  defaultChecked
-                />
-                <Form.Control type="number" placeholder="%" className="mt-2" style={{ width: '100px' }} />
-              </Form.Group>
-
-              <Form.Group className="mb-3">
-                <Form.Check 
-                  type="checkbox"
-                  label="Internal & External Works"
-                  defaultChecked
-                />
-                <Form.Control type="number" placeholder="%" className="mt-2" style={{ width: '100px' }} />
-              </Form.Group>
-
-              <Form.Group className="mb-3">
-                <Form.Check 
-                  type="checkbox"
-                  label="Final Installations & Interior Work"
-                  defaultChecked
-                />
-                <Form.Control type="number" placeholder="%" className="mt-2" style={{ width: '100px' }} />
-              </Form.Group>
-
-              <Form.Group className="mb-3">
-                <Form.Check 
-                  type="checkbox"
-                  label="Testing & Quality Checks"
-                  defaultChecked
-                />
-                <Form.Control type="number" placeholder="%" className="mt-2" style={{ width: '100px' }} />
-              </Form.Group>
-
-              <Form.Group className="mb-3">
-                <Form.Check 
-                  type="checkbox"
-                  label="Handover & Completion"
-                  defaultChecked
-                />
-                <Form.Control type="number" placeholder="%" className="mt-2" style={{ width: '100px' }} />
-              </Form.Group>
+              {Object.entries(formData.phases).map(([phase, { enabled, percentage }]) => (
+                <Form.Group className="mb-3" key={phase}>
+                  <Form.Check
+                    type="checkbox"
+                    label={phase.replace(/([A-Z])/g, ' $1').trim()}
+                    checked={enabled}
+                    onChange={(e) => handlePhaseCheckboxChange(phase, e.target.checked)}
+                  />
+                  <Form.Control
+                    type="number"
+                    placeholder="%"
+                    value={percentage}
+                    onChange={(e) => handlePhasePercentageChange(phase, e.target.value)}
+                    className="mt-2"
+                    style={{ width: '100px' }}
+                    disabled={!enabled}
+                  />
+                </Form.Group>
+              ))}
             </Form>
           </Modal.Body>
           <Modal.Footer>
             <Button variant="danger" onClick={handleCloseModal}>
               Cancel
             </Button>
-            <Button variant="success" onClick={handleCloseModal}>
+            <Button variant="success" onClick={handleSaveProject}>
               Save Project
             </Button>
           </Modal.Footer>

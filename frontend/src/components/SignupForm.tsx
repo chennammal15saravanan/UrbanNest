@@ -3,7 +3,7 @@ import { Eye, EyeOff, Mail, Lock, User, Phone, MapPin, Building2 } from 'lucide-
 import { signUpWithEmail, signInWithPhone, verifyOTP, signInWithGoogle } from '../lib/supabase';
 
 interface SignupFormProps {
-  userType: 'builder' | 'customer';
+  userType: 'builder' | 'customer'|'dashboard';
   onCancel: () => void;
 }
 

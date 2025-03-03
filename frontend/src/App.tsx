@@ -32,7 +32,6 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/builder/signup" element={<BuilderSignup />} />
           <Route path="/customer/signup" element={<CustomerSignup />} />
-          <Route path="/new-project" element={<NewProject />} />
           <Route path="/builder/dashboard/*" element={
             <ProtectedRoute>
               <BuilderDashboard />
